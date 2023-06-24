@@ -60,11 +60,7 @@ router.get('/', async (req, res, next) => {
     // Your code here
 
 
-    // Phase 2C: Handle invalid params with "Bad Request" response
-    if(errorResult.errors.length > 0){
-        res.status(400).json(errorResult)
-        return
-    }
+   
 
     // Phase 3C: Include total student count in the response even if params were
         // invalid
@@ -81,12 +77,43 @@ router.get('/', async (req, res, next) => {
                 }
         */
     // Your code here
+    errorResult.count = await Student.count()
+
+
+     // Phase 2C: Handle invalid params with "Bad Request" response
+     if(errorResult.errors.length > 0){
+        res.status(400).json(errorResult)
+        return
+    }
 
     let result = {};
 
     // Phase 3A: Include total number of results returned from the query without
         // limits and offsets as a property of count on the result
         // Note: This should be a new query
+    
+    const numStudents = await Student.count()
+
+    const numLeftHandedStudents = await Student.count({
+        where: {
+            leftHanded: true
+        }
+    })
+
+    const numAlfonsiStudents = await Student.count({
+        where: {
+            lastName: 'Alfonsi'
+        }
+    })
+
+    result.count = {
+        numStudents: numStudents,
+        numLeftHandedStudents: numLeftHandedStudents,
+        numRightHandedStudents: numStudents - numLeftHandedStudents,
+        numAlfonsiStudents: numAlfonsiStudents
+    }
+
+   
 
     result.rows = await Student.findAll({
         attributes: ['id', 'firstName', 'lastName', 'leftHanded'],
@@ -126,6 +153,18 @@ router.get('/', async (req, res, next) => {
             }
         */
     // Your code here
+    // result.count = {
+    //     numStudents: numStudents,
+    //     numLeftHandedStudents: numLeftHandedStudents,
+    //     numRightHandedStudents: numStudents - numLeftHandedStudents,
+    //     numAlfonsiStudents: numAlfonsiStudents
+    // }
+    result.pageCount = {
+        numStudentsPages: size === 0 ? 1 : Math.ceil(numStudents/size),
+        numLeftHandedStudentsPages: size === 0 ? 1 : Math.ceil(numLeftHandedStudents/size),
+        numRightHandedStudentsPages: size === 0 ? 1 : Math.ceil((numStudents - numLeftHandedStudents)/size),
+        numAlfonsiStudentsPages: size === 0 ? 1 : Math.ceil(numAlfonsiStudents/size),
+    }
 
     res.json(result);
 });
