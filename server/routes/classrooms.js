@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import model(s)
-const { Classroom } = require('../db/models');
+const { Classroom, Supply } = require('../db/models');
 const { Op } = require('sequelize');
 
 // List of classrooms
@@ -77,6 +77,22 @@ router.get('/:id', async (req, res, next) => {
             // classroom
         // Optional Phase 5D: Calculate the average grade of the classroom 
     // Your code here
+    // const supplyCount = await classroom.getSupplies().then(data => data.length)
+    classroom.supplyCount = await classroom.getSupplies().then(data => data.length)
+
+    classroom.studentCount = await classroom.getStudents().then(data => data.length)
+
+    classroom.overloaded = classroom.studentLimit < classroom.studentCount ? true : false
+
+    classroom.avgGrade = await classroom.getStudentClassrooms().then(arr => {
+        let sum = 0
+        let count = 0
+        arr.forEach(val => {
+            count++
+            sum += val.dataValues.grade
+        })
+        return sum/count
+    })
 
     res.json(classroom);
 });
