@@ -62,9 +62,29 @@ router.get('/', async (req, res, next) => {
 
     if(queryFirstName !== undefined){
         where.firstName = {
-            [Op.like] : queryFirstName 
+            [Op.like] : `%${queryFirstName}%` 
         }
     }
+
+    const queryLastName = req.query.lastName
+
+    if(queryLastName !== undefined){
+        where.lastName = {
+            [Op.like] : `%${queryLastName}%` 
+        }
+    }
+
+    const leftyFilter = req.query.lefty
+
+    console.log(leftyFilter)
+    
+    if(leftyFilter !== undefined){
+        if(['true', 'false'].includes(leftyFilter)){
+            where.leftHanded = leftyFilter === 'true' ? 1 : 0
+        }else{
+            errorResult.errors.push({message: 'Lefty should be either true or false'})
+        }
+    } 
 
 
    
@@ -160,12 +180,7 @@ router.get('/', async (req, res, next) => {
             }
         */
     // Your code here
-    // result.count = {
-    //     numStudents: numStudents,
-    //     numLeftHandedStudents: numLeftHandedStudents,
-    //     numRightHandedStudents: numStudents - numLeftHandedStudents,
-    //     numAlfonsiStudents: numAlfonsiStudents
-    // }
+    
     const queryCount = result.rows.count
     result.rows = result.rows.rows
 
