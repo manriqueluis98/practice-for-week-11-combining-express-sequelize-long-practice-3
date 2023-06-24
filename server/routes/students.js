@@ -58,6 +58,13 @@ router.get('/', async (req, res, next) => {
     const where = {};
 
     // Your code here
+    const queryFirstName = req.query.firstName
+
+    if(queryFirstName !== undefined){
+        where.firstName = {
+            [Op.like] : queryFirstName 
+        }
+    }
 
 
    
@@ -114,8 +121,8 @@ router.get('/', async (req, res, next) => {
     }
 
    
-
-    result.rows = await Student.findAll({
+    console.log(where)
+    result.rows = await Student.findAndCountAll({
         attributes: ['id', 'firstName', 'lastName', 'leftHanded'],
         where,
         // Phase 1A: Order the Students search results
@@ -159,12 +166,10 @@ router.get('/', async (req, res, next) => {
     //     numRightHandedStudents: numStudents - numLeftHandedStudents,
     //     numAlfonsiStudents: numAlfonsiStudents
     // }
-    result.pageCount = {
-        numStudentsPages: size === 0 ? 1 : Math.ceil(numStudents/size),
-        numLeftHandedStudentsPages: size === 0 ? 1 : Math.ceil(numLeftHandedStudents/size),
-        numRightHandedStudentsPages: size === 0 ? 1 : Math.ceil((numStudents - numLeftHandedStudents)/size),
-        numAlfonsiStudentsPages: size === 0 ? 1 : Math.ceil(numAlfonsiStudents/size),
-    }
+    const queryCount = result.rows.count
+    result.rows = result.rows.rows
+
+    result.pageCount = size === 0 ? 1 : Math.ceil(queryCount/size)
 
     res.json(result);
 });
