@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import model(s)
-const { Student } = require('../db/models');
+const { Student, Classroom, StudentClassroom } = require('../db/models');
 const { Op } = require("sequelize");
 
 // List
@@ -119,34 +119,25 @@ router.get('/', async (req, res, next) => {
         // limits and offsets as a property of count on the result
         // Note: This should be a new query
     
-    const numStudents = await Student.count()
+    
 
-    const numLeftHandedStudents = await Student.count({
-        where: {
-            leftHanded: true
-        }
-    })
-
-    const numAlfonsiStudents = await Student.count({
-        where: {
-            lastName: 'Alfonsi'
-        }
-    })
-
-    result.count = {
-        numStudents: numStudents,
-        numLeftHandedStudents: numLeftHandedStudents,
-        numRightHandedStudents: numStudents - numLeftHandedStudents,
-        numAlfonsiStudents: numAlfonsiStudents
-    }
+    
 
    
     console.log(where)
-    result.rows = await Student.findAndCountAll({
+    result.rows = await Student.findAll({
         attributes: ['id', 'firstName', 'lastName', 'leftHanded'],
         where,
+        include: {
+            model: Classroom,
+            attributes: ['id', 'name'],
+            through: {
+                model: StudentClassroom,
+                attributes: ['grade']
+            }
+        },
         // Phase 1A: Order the Students search results
-        order: [['lastName', 'ASC'], ['firstName', 'ASC']],
+        order: [['lastName', 'ASC'], ['firstName', 'ASC'], [Classroom, StudentClassroom, 'grade', 'DESC'] ],
         limit,
         offset
     });
@@ -162,6 +153,8 @@ router.get('/', async (req, res, next) => {
             }
         */
     // Your code here
+
+    
 
     result.page = page === 0 ? 1 : page
 
@@ -180,9 +173,31 @@ router.get('/', async (req, res, next) => {
             }
         */
     // Your code here
+
     
-    const queryCount = result.rows.count
-    result.rows = result.rows.rows
+
+    
+    const queryCount = result.rows.length
+
+    let numLeftHandedStudents = 0;
+    let numAlfonsiStudents = 0;
+
+    result.rows.forEach((row) => {
+        if(row.leftHanded){
+            numLeftHandedStudents++
+        }
+
+        if(row.lastName === 'Alfonsi'){
+            numAlfonsiStudents++
+        }
+    })
+
+    result.count = {
+        numStudents: queryCount,
+        numLeftHandedStudents: numLeftHandedStudents,
+        numRightHandedStudents: queryCount - numLeftHandedStudents,
+        numAlfonsiStudents: numAlfonsiStudents
+    }
 
     result.pageCount = size === 0 ? 1 : Math.ceil(queryCount/size)
 

@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import model(s)
-const { Supply } = require('../db/models');
+const { Supply, Classroom} = require('../db/models');
 
 // List of supplies by category
 router.get('/category/:categoryName', async (req, res, next) => {
@@ -20,7 +20,10 @@ router.get('/category/:categoryName', async (req, res, next) => {
         where: {
             category: req.params.categoryName
         },
-        order: [['name', 'ASC'], ['handed', 'ASC']]
+        include: {
+            model: Classroom
+        },
+        order: [[{model: Classroom}, 'name', 'ASC'], ['name', 'ASC'], ['handed', 'ASC']]
     })
 
     res.json(supplies)
