@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import model(s)
-const { Classroom, Supply, Student } = require('../db/models');
+const { Classroom, Supply, Student, sequelize, StudentClassroom } = require('../db/models');
 const { Op } = require('sequelize');
 
 // List of classrooms
@@ -81,12 +81,29 @@ router.get('/', async (req, res, next) => {
     }
 
     const classrooms = await Classroom.findAll({
-        attributes: [ 'id', 'name', 'studentLimit' ],
+        attributes: {
+            include: [
+                [
+                    sequelize.fn("AVG", sequelize.col("StudentClassrooms.grade")),
+                    "avgGrade"      
+                ],
+                [
+                    sequelize.fn("COUNT", sequelize.col("StudentClassrooms.id")),
+                    "numStudents"
+                ]
+            ]
+        } ,
+        include:{
+            model: StudentClassroom,
+            attributes: []
+        },
         where,
         // Phase 1B: Order the Classroom search results
 
         order: [['name', 'ASC']]
     });
+
+
 
     res.json(classrooms);
 });
@@ -135,21 +152,21 @@ router.get('/:id', async (req, res, next) => {
     // Your code here
     // const supplyCount = await classroom.getSupplies().then(data => data.length)
 
-    // classroom.supplyCount = await classroom.getSupplies().then(data => data.length)
+    classroom.supplyCount = await classroom.getSupplies().then(data => data.length)
 
-    // classroom.studentCount = await classroom.getStudents().then(data => data.length)
+    classroom.studentCount = await classroom.getStudents().then(data => data.length)
 
-    // classroom.overloaded = classroom.studentLimit < classroom.studentCount ? true : false
+    classroom.overloaded = classroom.studentLimit < classroom.studentCount ? true : false
 
-    // classroom.avgGrade = await classroom.getStudentClassrooms().then(arr => {
-    //     let sum = 0
-    //     let count = 0
-    //     arr.forEach(val => {
-    //         count++
-    //         sum += val.dataValues.grade
-    //     })
-    //     return sum/count
-    // })
+    classroom.avgGrade = await classroom.getStudentClassrooms().then(arr => {
+        let sum = 0
+        let count = 0
+        arr.forEach(val => {
+            count++
+            sum += val.dataValues.grade
+        })
+        return sum/count
+    })
 
     res.json(classroom);
 });
