@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import model(s)
-const { Supply, Classroom} = require('../db/models');
+const { Supply, Classroom, Student, sequelize} = require('../db/models');
 
 // List of supplies by category
 router.get('/category/:categoryName', async (req, res, next) => {
@@ -43,6 +43,22 @@ router.get('/scissors/calculate', async (req, res, next) => {
             // "Safety Scissors" currently in all classrooms, regardless of
             // handed-ness
     // Your code here
+    const supplyGroupByHanded = await Supply.findAll({
+        where: {
+            name: 'Safety Scissors'
+        },
+        attributes: [
+            "handed",
+            [sequelize.fn('COUNT', sequelize.col('handed')), "counter"]
+        ],
+        group: "handed",
+        raw: true
+    })
+
+    result.numRightyScissors = supplyGroupByHanded[1].counter
+    result.numLeftyScissors = supplyGroupByHanded[0].counter
+    
+    result.totalNumScissors = result.numRightyScissors + result.numLeftyScissors
 
     // Phase 10B: Total number of right-handed and left-handed students in all
         // classrooms
@@ -58,6 +74,20 @@ router.get('/scissors/calculate', async (req, res, next) => {
         // result.numLeftHandedStudents should equal the total number of
             // left-handed students in all classrooms
     // Your code here
+    const studentGroupByHanded = await Classroom.findAll({
+        attributes: [
+            [sequelize.fn('COUNT', sequelize.col('Students.leftHanded')), "counter"]
+        ],
+        include: {
+            model: Student,
+            attributes: []
+        },
+        group: ['Students.leftHanded'],
+        raw: true
+    })
+
+    result.numRightHandedStudents = studentGroupByHanded[0].counter
+    result.numLeftHandedStudents = studentGroupByHanded[1].counter
 
     // Phase 10C: Total number of scissors still needed for all classrooms
         // result.numRightyScissorsStillNeeded should equal the total number
@@ -70,6 +100,9 @@ router.get('/scissors/calculate', async (req, res, next) => {
             // of left-handed scissors still needed to be added to all the
             // classrooms
     // Your code here
+    result.numRightyScissorsStillNeeded = result.numRightHandedStudents - result.numRightyScissors
+    result. numLeftyScissorsStillNeeded = result.numLeftHandedStudents - result.numLeftyScissors
+
 
     res.json(result);
 });
